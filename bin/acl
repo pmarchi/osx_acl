@@ -1,45 +1,15 @@
 #!/usr/bin/env ruby
 
-$LOAD_PATH.unshift File.dirname(__FILE__) + '/../lib'
+$LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__) + '/../lib'))
 
 require 'osx_acl'
 
-OsxAcl::Script.new.parse(ARGV)
+options = OsxAcl::Script.new.parse(ARGV)
+dir = ARGV.first
+path = OsxAcl::Dir.new(dir)
 
-
-dir_and_files_permissions = %w(
-  delete
-  readattr
-  writeattr
-  readextattr
-  writextxattr
-  readsecurity
-  writesecurity
-  chown
-  )
-  
-dir_permissions = %(
-  list
-  search
-  add_file
-  add_subdirectory
-  delete_child
-  )
-  
-file_permissions = %w(
-  read
-  write
-  append
-  execute
-  )
-  
-inheritance = %w(
-  file_inherit
-  directory_inherit
-  limit_inherit
-  only_inherit
-  )
-  
-
-
-
+if options.aces.nil?
+  puts path.get
+else
+  path.set(options.aces, :recursive => options.recursive)
+end
