@@ -19,10 +19,9 @@ class OsxAcl::Dir
   #   ro => read only
   #   rw => read/write
   PSET = {
-    :ro => 'readattr,readextattr,readsecurity,list,search,read,execute',
-    :rw => 'delete,readattr,writeattr,readextattr,writeextattr,readsecurity,writesecurity,list,search,read,write,append,execute,add_file,add_subdirectory,delete_child',
-    :roi => 'readattr,readextattr,readsecurity,list,search,read,execute,file_inherit,directory_inherit',
-    :rwi => 'delete,readattr,writeattr,readextattr,writeextattr,readsecurity,writesecurity,list,search,read,write,append,execute,add_file,add_subdirectory,delete_child,file_inherit,directory_inherit',
+    'ro'  => 'readattr,readextattr,readsecurity,list,search,read,execute',
+    'rw'  => 'delete,readattr,writeattr,readextattr,writeextattr,readsecurity,writesecurity,list,search,read,write,append,execute,add_file,add_subdirectory,delete_child',
+    'fdi' => 'file_inherit,directory_inherit',
   }
 
   attr_reader :dir
@@ -51,15 +50,25 @@ class OsxAcl::Dir
   
   # Set aces on dir
   # e.g.
-  #   #set([['user:patrick', :rw], ['user:katja', :ro]], :recursive => true)
+  #   #set([['user:patrick', :rw, :ri], ['user:katja', :ro, :i]])
   #
-  def set(aces, options)
-    # TODO
-    # every ace should have a flag for recursive and one flag for inheritance permission
-    aces.reverse.each do |actor, short_permissions|
-      run "chmod +a '#{actor} allow #{PSET[short_permissions]}' #{dir}"
-      run "find #{dir} -mindepth 1 -exec chmod +ai '#{actor} allow #{PSET[short_permissions]}' {} \\;" if options[:recursive]
+  def set(aces)
+    aces.reverse.each do |actor, pset, flags|
+      inherit, recursive = parse_flags(flags)
+      run "chmod +a '#{actor} allow #{build_pset(pset, inherit)}' #{dir}"
+      run "find #{dir} -mindepth 1 -exec chmod +ai '#{actor} allow #{build_pset(pset, inherit)}' {} \\;" if recursive
     end
+  end
+  
+  def parse_flags(flags)
+    flags = String(flags)
+    return ['fdi', true] if flags.include?('r')
+    return ['fdi', false] if flags.include?('i')
+    [false, false]
+  end
+  
+  def build_pset(pset, inherit)
+    [PSET[pset], PSET[inherit]].compact.join(',')
   end
   
   def run(*args)
