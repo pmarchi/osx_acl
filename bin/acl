@@ -8,8 +8,10 @@ options = OsxAcl::Script.new.parse(ARGV)
 dir = ARGV.first
 path = OsxAcl::Dir.new(dir)
 
-if options.aces.nil?
+
+if ! options.aces && ! options.clear
   puts path.get
 else
-  path.set(options.aces, :recursive => options.recursive)
+  path.clear(:recursive => (options.clear == :recursive)) if options.clear
+  path.set(options.aces, :recursive => options.recursive, :inherit => options.inherit) if options.aces
 end

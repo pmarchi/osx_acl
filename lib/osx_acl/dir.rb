@@ -15,25 +15,16 @@ class OsxAcl::Dir
   # Regexp for parsing acl
   ACL_RX = /^\s+(\d+):\s+(\w+:\w+)\s+(?:(inherited)\s+)?(allow|deny)\s+(.*)$/
 
-  # Predefined set of permissions for directories
+  # Predefined set of permissions
   #   ro => read only
   #   rw => read/write
   PSET = {
-    :ro => 'readattr,readextattr,readsecurity,list,search,file_inherit,directory_inherit',
-    :rw => 'delete,readattr,writeattr,readextattr,writeextattr,readsecurity,writesecurity,list,search,add_file,add_subdirectory,delete_child,file_inherit,directory_inherit',
+    :ro => 'readattr,readextattr,readsecurity,list,search,read,execute',
+    :rw => 'delete,readattr,writeattr,readextattr,writeextattr,readsecurity,writesecurity,list,search,read,write,append,execute,add_file,add_subdirectory,delete_child',
+    :roi => 'readattr,readextattr,readsecurity,list,search,read,execute,file_inherit,directory_inherit',
+    :rwi => 'delete,readattr,writeattr,readextattr,writeextattr,readsecurity,writesecurity,list,search,read,write,append,execute,add_file,add_subdirectory,delete_child,file_inherit,directory_inherit',
   }
 
-  PSET_DIR = {
-    :ro => 'readattr,readextattr,readsecurity,list,search,file_inherit,directory_inherit',
-    :rw => 'delete,readattr,writeattr,readextattr,writeextattr,readsecurity,writesecurity,list,search,add_file,add_subdirectory,delete_child,file_inherit,directory_inherit',
-  }
-
-  # Predefined set of permissions for files
-  PSET_FILE = {
-    :ro => 'readattr,readextattr,readsecurity,read,execute',
-    :rw => 'delete,readattr,writeattr,readextattr,writeextattr,readsecurity,writesecurity,read,write,append,execute',
-  }
-  
   attr_reader :dir
   attr_reader :acl
   
@@ -47,54 +38,32 @@ class OsxAcl::Dir
     acl
   end
 
-  # Set aces on dir
-  # e.g.
-  #   #set([['user:patrick', :rw], ['user:katja', :ro]], :recursive => true)
-  def set(aces, options)
-    run commands(dir, aces).join(' && ')
-    run commands_r(dir, aces).join(' && ') if options[:recursive]
-  end
-  
   def parse(list)
     list.scan(ACL_RX)
   end
 
-  # TODO
-  # Simplify code and remove distinction of dir and file, because all settings
-  # could be applied to files and dirs as well. Only the permissions will be set
-  # which make sens for the given type.
-
-  
-  # Consturct a sequence of chmod commands which will first clear the ACL and
-  # then insert an ace for every actor specified by aces. The commands will be
-  # returned as an array.
+  # Clear acl on dir
   #
-  # => ['chmod -N path',
-  #     'chmod +a# 0 actor allow permission path',
-  #     'chmod +a# 1 actor allow permission path']
-  #
-  def commands(path, aces, pset=PSET_DIR, inherited=false)
-    cmds = ["chmod -N #{path}"]
-    sub_cmd = inherited ? '+ai#' : '+a#'
-    aces.each_with_index do |(actor, short_permissions), index|
-      cmds << "chmod #{sub_cmd} #{index} '#{actor} allow #{pset[short_permissions]}' #{path}"
-    end
-    cmds
+  def clear(options)
+    r = options[:recursive] ? '-R' : ''
+    run 'chmod', r, '-N', dir
   end
   
-  # Wraps the commands from above in order to feed them to find.
+  # Set aces on dir
+  # e.g.
+  #   #set([['user:patrick', :rw], ['user:katja', :ro]], :recursive => true)
   #
-  # => ['find path -mindepth 1 -type d -exec cmd_dir1 \; -exec cmd_dir2 \;',
-  #     'find path -mindepth 1 -type f -exec cmd_file1 \; -exec cmd_file2 \;']
-  #
-  def commands_r(path, aces)
-    cmds = []
-    cmds << "find #{path} -mindepth 1 -type d #{commands('{}', aces, PSET_DIR, true).map {|cmd| "-exec #{cmd} \\;"}.join(' ')}"
-    cmds << "find #{path} -mindepth 1 -type f #{commands('{}', aces, PSET_FILE, true).map {|cmd| "-exec #{cmd} \\;"}.join(' ')}"
-    cmds
+  def set(aces, options)
+    # TODO
+    # every ace should have a flag for recursive and one flag for inheritance permission
+    aces.reverse.each do |actor, short_permissions|
+      run "chmod +a '#{actor} allow #{PSET[short_permissions]}' #{dir}"
+      run "find #{dir} -mindepth 1 -exec chmod +ai '#{actor} allow #{PSET[short_permissions]}' {} \\;" if options[:recursive]
+    end
   end
   
   def run(*args)
+    puts '--> ' + args.join(' ')
     `#{args.join(' ')}`
   end
 end

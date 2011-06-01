@@ -10,14 +10,23 @@ class OsxAcl::Script
     options = OpenStruct.new
     # Default values go here:
     options.aces = nil
+    options.clear = false
     options.recursive = false
 
     opts = OptionParser.new do |opt|
-      opt.banner = "Set Mac OS X style ACL Entries on Path.\n\nUsage: #{File.basename $0} [options] <path>"
+      opt.banner = "Set Mac OS X style ACL Entries on a Directory.\n\nUsage: #{File.basename $0} [options] <dir>"
       opt.separator ""
       opt.separator "Specific options:"
 
-      opt.on("-a", "--ace ACE,...", Array, "Set aces on path.", "ACE has the form: user|group:name:ro|rw") do |aces|
+      opt.on("-c", "--clear", "Clear acl on dir.") do
+        options.clear = true
+      end
+
+      opt.on("-C", "--clear-recursive", "Clear acl on dir, sub-dir and files.") do
+        options.clear = :recursive
+      end
+
+      opt.on("-a", "--ace ACE,...", Array, "Set aces on dir.", "ACE has the form: user|group:name:ro|rw") do |aces|
         options.aces = aces.map do |ace|
           type, name, perm = ace.split(':')
           ["#{type}:#{name}", perm.to_sym]
@@ -47,6 +56,8 @@ class OsxAcl::Script
       exit 1
     end
 
+    # TODO
+    # if inheritance is set rewrite short permissions :ro => :roi, :rw => :rwi
     options
   end
 end
