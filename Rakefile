@@ -17,7 +17,7 @@ spec = Gem::Specification.new do |s|
 
   # Change these as appropriate
   s.name              = "osx_acl"
-  s.version           = "0.1.0"
+  s.version           = "0.1.1"
   s.summary           = "Simplify the management of ACLs on OS X, by restricting operation to common tasks."
   s.author            = "Patrick Marchi"
   s.email             = "mail@patrickmarchi.ch"

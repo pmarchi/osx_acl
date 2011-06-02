@@ -6,7 +6,7 @@ require 'osx_acl'
 
 options = OsxAcl::Script.new.parse(ARGV)
 dir = ARGV.first
-path = OsxAcl::Dir.new(dir, options)
+path = OsxAcl::Dir.new(dir, :debug => options.debug)
 
 if ! options.aces && ! options.clear
   puts path.get
