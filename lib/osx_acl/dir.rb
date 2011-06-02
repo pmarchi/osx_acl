@@ -25,10 +25,11 @@ class OsxAcl::Dir
   }
 
   attr_reader :dir
-  attr_reader :acl
+  attr_reader :options
   
-  def initialize(dir)
+  def initialize(dir, options=OpenStruct.new)
     @dir = dir
+    @options = options
   end
   
   def get
@@ -72,7 +73,7 @@ class OsxAcl::Dir
   end
   
   def run(*args)
-    puts '--> ' + args.join(' ')
+    puts '--> ' + args.join(' ') if options.debug
     `#{args.join(' ')}`
   end
 end

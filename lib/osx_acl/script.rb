@@ -11,6 +11,7 @@ class OsxAcl::Script
     # Default values go here:
     options.aces = nil
     options.clear = false
+    options.debug = false
 
     opts = OptionParser.new do |opt|
       opt.banner = "Set Mac OS X style ACL Entries on a Directory.\n\nUsage: #{File.basename $0} [options] <dir>"
@@ -30,6 +31,10 @@ class OsxAcl::Script
           type, name, pset, flags = ace.split(':')
           ["#{type}:#{name}", pset, flags]
         end
+      end
+
+      opt.on("-d", "--debug", "Print debug information.") do
+        options.debug = true
       end
 
       opt.on_tail("-h", "--help", "Show this message") do
