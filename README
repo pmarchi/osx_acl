@@ -1,0 +1,5 @@
+
+A little script to simplify the management of ACLs on OS X.
+The possible operation are restricted to common task. If you have special
+use cases you will be sticked to the standard commands (ls, chmod) shipped with
+OS X.
