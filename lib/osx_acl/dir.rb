@@ -33,7 +33,7 @@ class OsxAcl::Dir
   end
   
   def get
-    acl = run 'ls -dle', dir
+    acl = run 'ls -dle', "'#{dir}'"
     # @acl = parse(run 'ls -dle', dir)
     acl
   end
@@ -46,7 +46,7 @@ class OsxAcl::Dir
   #
   def clear(options)
     r = options[:recursive] ? '-R' : ''
-    run 'chmod', r, '-N', dir
+    run 'chmod', r, '-N', "'#{dir}'"
   end
   
   # Set aces on dir
@@ -56,8 +56,8 @@ class OsxAcl::Dir
   def set(aces)
     aces.reverse.each do |actor, pset, flags|
       inherit, recursive = parse_flags(flags)
-      run "chmod +a '#{actor} allow #{build_pset(pset, inherit)}' #{dir}"
-      run "find #{dir} -mindepth 1 -exec chmod +ai '#{actor} allow #{build_pset(pset, inherit)}' {} \\;" if recursive
+      run "chmod +a '#{actor} allow #{build_pset(pset, inherit)}' '#{dir}'"
+      run "find '#{dir}' -mindepth 1 -exec chmod +ai '#{actor} allow #{build_pset(pset, inherit)}' {} \\;" if recursive
     end
   end
   
